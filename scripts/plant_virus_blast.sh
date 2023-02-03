@@ -82,16 +82,18 @@ fi
 
 # NCBI datasets program #################################################################
 
-# Download datasets program from NCBI, if not present
-FILE=datasets
-if [ -f "$FILE" ]; then
-    echo "datasets program already exists. Skipping download."
-else
-curl -o datasets 'https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/LATEST/linux-amd64/datasets'
-curl -o dataformat 'https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/LATEST/linux-amd64/dataformat'
-chmod +x datasets dataformat
-echo $(./datasets version) >> dataset_version.txt
+# Download datasets program from NCBI, if not present in PATH
+
+if hash datasets 2> /dev/null;
+   then echo "datasets program already exists in your PATH. Skipping download.";
+        echo $(datasets version) >> datasets_version.txt
+   else curl -o datasets 'https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/LATEST/linux-amd64/datasets';
+        curl -o dataformat 'https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/LATEST/linux-amd64/dataformat';
+        chmod +x datasets dataformat;
+        echo $(./datasets version) >> datasets_version.txt
 fi
+
+
 
 
 # HOST GENOME ############################################################################
@@ -112,9 +114,6 @@ rm -rf ncbi_dataset
 cd $MAIN_DIR
 else
 echo "Host reference genome already exists. Skipping download. Delete it and re-run script if you need to."
-cd $HOST_DIR
-find . -name "*.fna" | grep -v "rna.fna" | grep -v "cds_" | xargs cat | seqtk seq > complete_genome.fasta
-cd $MAIN_DIR
 fi
 
 echo "Combining nanopore read files into one query file..."
@@ -149,7 +148,7 @@ echo $(flye -v) > flye_version.txt
 
 # run Flye
 
-flye --meta -t 12 --nano-raw $unmappedfq -o $ASSEMBLY_DIR
+flye --meta -t 12 --nano-raw $unmappedfq -o $ASSEMBLY_DIR -m 250
 
 cat $ASSEMBLY_FILE | seqtk seq > $ASSEMBLY_FILE.formatted
 
